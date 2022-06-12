@@ -1,0 +1,37 @@
+#include <Arduino.h>
+#include <U8x8lib.h>
+#include <SPI.h>
+#include <Wire.h>
+#include "SdFat.h"
+SdFat SD;
+File BPM;
+#define REPORTING_PERIOD_MS 1000
+U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(/* reset=*/ U8X8_PIN_NONE);
+uint32_t tsLastReport = 0;
+const int chipSelect = 10;
+unsigned char c;
+
+void setup() {
+  u8x8.begin();
+  u8x8.setFont(u8x8_font_profont29_2x3_n);
+  SD.begin(chipSelect);
+  Wire.begin();
+}
+
+void loop() {
+  if (millis() - tsLastReport > REPORTING_PERIOD_MS) {
+    Wire.requestFrom(0xA0 >> 1, 1);
+    while (Wire.available()) {         
+      c = Wire.read(); 
+    }
+    BPM = SD.open("BPM.txt", FILE_WRITE);
+    if (BPM) {
+      BPM.println(c);
+      BPM.close();
+    }
+    u8x8.clearDisplay();
+    u8x8.setCursor(0, 0);
+    u8x8.print(c);
+    tsLastReport = millis();
+  }
+}
